@@ -3,7 +3,7 @@
 % Updated spring 2018, Andreas L. Flåten
 
 %% Initialization and model definition
-initXX; % Change this to the init file corresponding to your helicopter
+init05; % Change this to the init file corresponding to your helicopter
 Ac = [ 0      1        0          0;
        0      0      -K_2        0;
        0      0        0          1;
@@ -42,13 +42,13 @@ z  = zeros(N*mx+M*mu,1);                % Initialize z for the whole horizon
 z0 = z;                                 % Initial value for optimization
 
 % Bounds
-ul 	    = [0 0 0 0];                      % Lower bound on control
-uu 	    = [0 0 60*pi/360 0];              % Upper bound on control
+ul 	    = -Inf;                      % Lower bound on control
+uu 	    = Inf;              % Upper bound on control
 
 xl      = -Inf*ones(mx,1);              % Lower bound on states (no bound)
 xu      = Inf*ones(mx,1);               % Upper bound on states (no bound)
-xl(3)   = ul;                           % Lower bound on state x3
-xu(3)   = uu;                           % Upper bound on state x3
+xl(3)   = -60*pi/360;                           % Lower bound on state x3
+xu(3)   = 60*pi/360;                           % Upper bound on state x3
 
 % Generate constraints on measurements and inputs
 [vlb,vub]       = gen_constraints(N, M, xl, xu, ul, uu); % hint: gen_constraints
@@ -57,21 +57,27 @@ vub(N*mx+M*mu)  = 0;                    % We want the last input to be zero
 
 % Generate the matrix Q and the vector c (objecitve function weights in the QP problem) 
 Q1 = zeros(mx,mx);
-Q1(1,1) = 0;                            % Weight on state x1
+Q1(1,1) = 1;                            % Weight on state x1
 Q1(2,2) = 0;                            % Weight on state x2
-Q1(3,3) = 0.12;                            % Weight on state x3
+Q1(3,3) = 0;                            % Weight on state x3
 Q1(4,4) = 0;                            % Weight on state x4
-P1 = 0;                                % Weight on input
+
+
+P1 = 1;                                % Weight on input
 Q = gen_q(Q1, P1, N, M);                                  % Generate Q, hint: gen_q
-c = ;                                  % Generate c, this is the linear constant term in the QP
+c = zeros(N*mx + M*mu, 1);                % Generate c, this is the linear constant term in the QP
 
 %% Generate system matrixes for linear model
 Aeq = gen_aeq   (A1, B1, N, mx, mu);             % Generate A, hint: gen_aeq
-beq = ;             % Generate b
+beq = zeros(N*mx,1);
+beq(1:mx) = A1 * x0;          % Generate b
 
 %% Solve QP problem with linear model
+opts = optimoptions('quadprog', ...
+    'Algorithm','active-set', ...
+    'Display','iter');   % or 'off'
 tic
-[z,lambda] = quadprog(H, f); % hint: quadprog. Type 'doc quadprog' for more info 
+[z,lambda] = quadprog(Q, c, [], [], Aeq, beq, vlb, vub, z0, opts); % hint: quadprog. Type 'doc quadprog' for more info 
 t1=toc;
 
 % Calculate objective value
