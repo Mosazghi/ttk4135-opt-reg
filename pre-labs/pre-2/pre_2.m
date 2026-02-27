@@ -64,7 +64,7 @@ Q1(3,3) = 0;                            % Weight on state x3
 Q1(4,4) = 0;                            % Weight on state x4
 
 
-P1 = 0.12;                                % Weight on input
+P1 = 1;                                % Weight on input
 H = gen_q(Q1, P1, N, M);                                  % Generate Q, hint: gen_q
 c = zeros(N*mx+M*mu, 1);                % Generate c, this is the linear constant term in the QP
 
@@ -75,7 +75,7 @@ beq(1:mx,1) = A1 * x0;          % Generate b
 
 %% Solve QP problem with linear model
 tic
-[z,lambda] = quadprog(H, c, [], [], Aeq, beq, vlb, vub, z0); % hint: quadprog. Type 'doc quadprog' for more info 
+[z,lambda] = quadprog(2*H, c, [], [], Aeq, beq, vlb, vub, z0); % hint: quadprog. Type 'doc quadprog' for more info 
 t1=toc;
 
 % Calculate objective value
@@ -125,8 +125,8 @@ xlabel('tid (s)'),ylabel('pdot')
 
 u_star = timeseries(u, t);
 %% From Lab 3 (feedback)
-Q = diag([5 1 0.1 0.1]);
-R = diag(0.1);
+Q = diag([100 1 1 1]);
+R = 1;
 K = dlqr(A1,B1, Q, R);
 x_star = timeseries([x1, x2, x3, x4], t);
 

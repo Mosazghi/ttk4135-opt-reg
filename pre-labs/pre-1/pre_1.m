@@ -55,7 +55,7 @@ xu(3)   = 60*pi/360;                           % Upper bound on state x3
 vlb(N*mx+M*mu)  = 0;                    % We want the last input to be zero
 vub(N*mx+M*mu)  = 0;                    % We want the last input to be zero
 
-% Generate the matrix Q and the vector c (objecitve function weights in the QP problem) 
+% Generate the matrix H and the vector c (objecitve function weights in the QP problem) 
 Q1 = zeros(mx,mx);
 Q1(1,1) = 1;                            % Weight on state x1
 Q1(2,2) = 0;                            % Weight on state x2
@@ -64,7 +64,7 @@ Q1(4,4) = 0;                            % Weight on state x4
 
 
 P1 = 1;                                % Weight on input
-Q = gen_q(Q1, P1, N, M);                                  % Generate Q, hint: gen_q
+H = gen_q(Q1, P1, N, M);                                  % Generate H, hint: gen_q
 c = zeros(N*mx + M*mu, 1);                % Generate c, this is the linear constant term in the QP
 
 %% Generate system matrixes for linear model
@@ -77,14 +77,14 @@ opts = optimoptions('quadprog', ...
     'Algorithm','active-set', ...
     'Display','iter');   % or 'off'
 tic
-[z,lambda] = quadprog(Q, c, [], [], Aeq, beq, vlb, vub, z0, opts); % hint: quadprog. Type 'doc quadprog' for more info 
+[z,lambda] = quadprog(H, c, [], [], Aeq, beq, vlb, vub, z0, opts); % hint: quadprog. Type 'doc quadprog' for more info 
 t1=toc;
 
 % Calculate objective value
 phi1 = 0.0;
 PhiOut = zeros(N*mx+M*mu,1);
 for i=1:N*mx+M*mu
-  phi1=phi1+Q(i,i)*z(i)*z(i);
+  phi1=phi1+H(i,i)*z(i)*z(i);
   PhiOut(i) = phi1;
 end
 
@@ -108,6 +108,7 @@ x4  = [zero_padding; x4; zero_padding];
 
 %% Plotting
 t = 0:delta_t:delta_t*(length(u)-1);
+u_star = timeseries(u, t);
 
 figure(2)
 subplot(511)
